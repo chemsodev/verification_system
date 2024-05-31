@@ -3,19 +3,20 @@ package com.project.controller;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 import com.project.model.ResponseData;
-
 import org.springframework.boot.web.servlet.error.ErrorController;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.core.io.ClassPathResource;
 import org.apache.commons.io.FileUtils;
 import javax.imageio.ImageIO;
-
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -23,9 +24,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
@@ -36,24 +37,22 @@ import com.google.zxing.NotFoundException;
 import com.google.zxing.Result;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-
 @Controller
 public class ClientController implements ErrorController {
+
     @GetMapping("")
     public ModelAndView home() {
         return new ModelAndView("addimage");
     }
+
     @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseData> addImagePost(@RequestParam("image") MultipartFile file) throws IOException {
         ResponseData responseData = processImage(file);
         return new ResponseEntity<>(responseData, responseData.getStatus() == HttpStatus.OK.value() ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
     }
 
-
     private ResponseData processImage(MultipartFile file) throws IOException {
         byte[] bytes = file.getBytes();
-
         BufferedImage bufferedImage = ImageIO.read(file.getInputStream());
         BufferedImageLuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
         BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
@@ -67,18 +66,10 @@ public class ClientController implements ErrorController {
             }
 
             ITesseract tesseract = new Tesseract();
-
-            // Load tessdata directory from resources
-            ClassPathResource resource = new ClassPathResource("tessdata");
-            InputStream inputStream = resource.getInputStream();
-            File tempDir = Files.createTempDirectory("tessdata").toFile();
-
-            // Copy tessdata directory to a temporary directory
-            FileUtils.copyDirectory(resource.getFile(), tempDir);
-
-            // Set the temporary directory containing tessdata as the data path for Tesseract
-            tesseract.setDatapath(tempDir.getPath());
+            File tessdataDir = extractTessdataDirectory();
+            tesseract.setDatapath(tessdataDir.getAbsolutePath());
             tesseract.setLanguage("eng");
+
             BufferedImage rotatedImage;
             String matricule = null;
             for (int i = 1; i <= 4; i++) {
@@ -114,6 +105,14 @@ public class ClientController implements ErrorController {
             return new ResponseData("OCR error occurred.", HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
         }
     }
+
+    private File extractTessdataDirectory() throws IOException {
+        ClassPathResource resource = new ClassPathResource("tessdata");
+        Path tempDir = Files.createTempDirectory("tessdata");
+        FileUtils.copyDirectory(resource.getFile(), tempDir.toFile());
+        return tempDir.toFile();
+    }
+
     private BufferedImage rotateImage(BufferedImage image, int angle) {
         double radians = Math.toRadians(angle);
         double sin = Math.abs(Math.sin(radians));
@@ -145,10 +144,5 @@ public class ClientController implements ErrorController {
         } else {
             return null;
         }
-    }
-    @RequestMapping("/error")
-    public String handleError() {
-        // Forward to the error page
-        return "error";
     }
 }
