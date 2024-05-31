@@ -3,6 +3,7 @@ package com.project.controller;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 import com.project.model.ResponseData;
+import org.apache.commons.io.FileUtils;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
@@ -12,10 +13,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
-import org.apache.commons.io.FileUtils;
+
 import javax.imageio.ImageIO;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
@@ -25,8 +25,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
@@ -107,11 +110,18 @@ public class ClientController implements ErrorController {
     }
 
     private File extractTessdataDirectory() throws IOException {
-        ClassPathResource resource = new ClassPathResource("tessdata");
         Path tempDir = Files.createTempDirectory("tessdata");
-        FileUtils.copyDirectory(resource.getFile(), tempDir.toFile());
+
+        // Copy each file from the tessdata directory within the Docker image
+        String[] tessdataFiles = {"eng.traineddata"};
+        for (String tessdataFile : tessdataFiles) {
+            Path tessdataPath = Paths.get("/app/tessdata", tessdataFile);
+            Files.copy(tessdataPath, tempDir.resolve(tessdataFile), StandardCopyOption.REPLACE_EXISTING);
+        }
+
         return tempDir.toFile();
     }
+
 
     private BufferedImage rotateImage(BufferedImage image, int angle) {
         double radians = Math.toRadians(angle);
