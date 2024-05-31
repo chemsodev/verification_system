@@ -77,7 +77,7 @@ public class ClientController implements ErrorController {
             FileUtils.copyDirectory(resource.getFile(), tempDir);
 
             // Set the temporary directory containing tessdata as the data path for Tesseract
-            tesseract.setDatapath(tempDir.getAbsolutePath());
+            tesseract.setDatapath(tempDir.getPath());
             tesseract.setLanguage("eng");
             BufferedImage rotatedImage;
             String matricule = null;
