@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-eng \
     libleptonica-dev \
     locales \
+    wget \
     && apt-get clean
 
 # Generate locales
