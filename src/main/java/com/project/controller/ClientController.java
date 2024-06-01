@@ -52,68 +52,62 @@ public class ClientController implements ErrorController {
 
 
     private ResponseData processImage(MultipartFile file) throws IOException {
-        byte[] bytes = file.getBytes();
+    byte[] bytes = file.getBytes();
 
-        BufferedImage bufferedImage = ImageIO.read(file.getInputStream());
-        BufferedImageLuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
-        BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
-        QRCodeReader reader = new QRCodeReader();
+    BufferedImage bufferedImage = ImageIO.read(file.getInputStream());
+    BufferedImageLuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
+    BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
+    QRCodeReader reader = new QRCodeReader();
 
-        try {
-            Result result = reader.decode(bitmap);
-            String qrCodeData = result.getText();
-            if (!qrCodeData.equals("https://progres.mesrs.dz/api/infos/checkInscription/undefined")) {
-                return new ResponseData("Invalid QR code data.", HttpStatus.BAD_REQUEST.value(), null);
-            }
-
-            ITesseract tesseract = new Tesseract();
-
-            // Load tessdata directory from resources
-            ClassPathResource resource = new ClassPathResource("tessdata");
-            InputStream inputStream = resource.getInputStream();
-            File tempDir = Files.createTempDirectory("tessdata").toFile();
-
-            // Copy tessdata directory to a temporary directory
-            FileUtils.copyDirectory(resource.getFile(), tempDir);
-
-            // Set the temporary directory containing tessdata as the data path for Tesseract
-            tesseract.setDatapath(tempDir.getAbsolutePath());
-            tesseract.setLanguage("eng");
-            BufferedImage rotatedImage;
-            String matricule = null;
-            for (int i = 1; i <= 4; i++) {
-                rotatedImage = rotateImage(bufferedImage, 90 * i);
-                String ocrResult = tesseract.doOCR(rotatedImage);
-                System.out.println("ocrResult: ");
-                System.out.println(ocrResult);
-                System.out.println("----------------------------");
-                matricule = extractMatricule(ocrResult);
-                if (matricule != null) {
-                    System.out.println("matricule:" + matricule);
-                    break;
-                } else {
-                    System.out.println("matricule not found, trying again");
-                }
-            }
-            if (matricule != null) {
-                return new ResponseData("Student confirmed.", HttpStatus.OK.value(), matricule);
-            } else {
-                return new ResponseData("Matricule not found in OCR results.", HttpStatus.NOT_FOUND.value(), null);
-            }
-        } catch (NotFoundException e) {
-            e.printStackTrace();
-            return new ResponseData("QR code not found in the uploaded image.", HttpStatus.NOT_FOUND.value(), null);
-        } catch (ChecksumException | FormatException e) {
-            e.printStackTrace();
-            return new ResponseData("Invalid QR code format.", HttpStatus.BAD_REQUEST.value(), null);
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
+    try {
+        Result result = reader.decode(bitmap);
+        String qrCodeData = result.getText();
+        if (!qrCodeData.equals("https://progres.mesrs.dz/api/infos/checkInscription/undefined")) {
             return new ResponseData("Invalid QR code data.", HttpStatus.BAD_REQUEST.value(), null);
-        } catch (TesseractException e) {
-            e.printStackTrace();
-            return new ResponseData("OCR error occurred.", HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
         }
+
+        ITesseract tesseract = new Tesseract();
+
+        // Set the data path and language for Tesseract
+        tesseract.setDatapath("/app/tessdata");
+        tesseract.setLanguage("eng");
+
+        BufferedImage rotatedImage;
+        String matricule = null;
+        for (int i = 1; i <= 4; i++) {
+            rotatedImage = rotateImage(bufferedImage, 90 * i);
+            String ocrResult = tesseract.doOCR(rotatedImage);
+            System.out.println("ocrResult: ");
+            System.out.println(ocrResult);
+            System.out.println("----------------------------");
+            matricule = extractMatricule(ocrResult);
+            if (matricule != null) {
+                System.out.println("matricule:" + matricule);
+                break;
+            } else {
+                System.out.println("matricule not found, trying again");
+            }
+        }
+        if (matricule != null) {
+            return new ResponseData("Student confirmed.", HttpStatus.OK.value(), matricule);
+        } else {
+            return new ResponseData("Matricule not found in OCR results.", HttpStatus.NOT_FOUND.value(), null);
+        }
+    } catch (NotFoundException e) {
+        e.printStackTrace();
+        return new ResponseData("QR code not found in the uploaded image.", HttpStatus.NOT_FOUND.value(), null);
+    } catch (ChecksumException | FormatException e) {
+        e.printStackTrace();
+        return new ResponseData("Invalid QR code format.", HttpStatus.BAD_REQUEST.value(), null);
+    } catch (IllegalArgumentException e) {
+        e.printStackTrace();
+        return new ResponseData("Invalid QR code data.", HttpStatus.BAD_REQUEST.value(), null);
+    } catch (TesseractException e) {
+        e.printStackTrace();
+        return new ResponseData("OCR error occurred.", HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
     }
+}
+
     private BufferedImage rotateImage(BufferedImage image, int angle) {
         double radians = Math.toRadians(angle);
         double sin = Math.abs(Math.sin(radians));
