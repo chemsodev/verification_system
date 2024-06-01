@@ -4,36 +4,26 @@ WORKDIR /app
 COPY . .
 RUN mvn clean package -DskipTests
 
-# Stage 2: Build Tesseract and create the final Docker image
+# Stage 2: Create the final Docker image
 FROM openjdk:17.0.1-jdk-slim
 
-# Install dependencies for building Tesseract
+# Install dependencies
 RUN apt-get update && apt-get install -y \
-    autoconf \
-    automake \
-    build-essential \
-    ca-certificates \
-    g++ \
-    git \
-    libtool \
-    pkg-config \
-    wget \
+    tesseract-ocr \
+    tesseract-ocr-eng \
     libleptonica-dev \
+    locales \
     && apt-get clean
 
-# Download and build Tesseract 4.0.0
-RUN wget https://github.com/tesseract-ocr/tesseract/archive/refs/tags/4.0.0.tar.gz \
-    && tar -xzvf 4.0.0.tar.gz \
-    && cd tesseract-4.0.0 \
-    && ./autogen.sh \
-    && ./configure \
-    && make \
-    && make install \
-    && ldconfig
+# Generate locales
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8  
 
-# Download tessdata
-RUN mkdir -p /app/tessdata \
-    && wget https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata -P /app/tessdata
+# Create the tessdata directory and download the English trained data
+RUN mkdir -p /usr/share/tessdata \
+    && wget https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata -P /usr/share/tessdata
 
 # Copy the built application
 WORKDIR /app
