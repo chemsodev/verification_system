@@ -10,7 +10,6 @@ FROM openjdk:17.0.1-jdk-slim
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
-    tesseract-ocr-eng \
     libleptonica-dev \
     locales \
     wget \
@@ -25,6 +24,9 @@ ENV LC_ALL en_US.UTF-8
 # Create the tessdata directory and download the English trained data
 RUN mkdir -p /usr/share/tessdata \
     && wget https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata -P /usr/share/tessdata
+
+# Set the TESSDATA_PREFIX environment variable
+ENV TESSDATA_PREFIX /usr/share/tessdata/
 
 # Copy the built application
 WORKDIR /app
