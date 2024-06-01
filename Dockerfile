@@ -8,10 +8,12 @@ RUN mvn clean package -DskipTests
 # Stage 2: Create the final Docker image
 FROM openjdk:17.0.1-jdk-slim
 
-# Install dependencies
+# Install dependencies including Tesseract OCR
 RUN apt-get update && apt-get install -y \
     locales \
     wget \
+    tesseract-ocr \
+    libleptonica-dev \
     && apt-get clean
 
 # Generate locales
