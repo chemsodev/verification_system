@@ -9,8 +9,6 @@ FROM openjdk:17.0.1-jdk-slim
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    libleptonica-dev \
     locales \
     wget \
     && apt-get clean
@@ -21,19 +19,13 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en  
 ENV LC_ALL en_US.UTF-8  
 
-# Create the tessdata directory and download the English trained data
-RUN mkdir -p /usr/share/tessdata \
-    && wget https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata -P /usr/share/tessdata
-
-# Verify that the file is in the correct location
-RUN ls -la /usr/share/tessdata/
+# Copy Tesseract OCR files from Spring Boot resources
+WORKDIR /app
+COPY target/verification_system-0.0.1-SNAPSHOT.jar .
+COPY src/main/resources/tessdata /app/tessdata
 
 # Set the TESSDATA_PREFIX environment variable
-ENV TESSDATA_PREFIX=/usr/share/
-
-# Copy the built application
-WORKDIR /app
-COPY --from=build /app/target/verification_system-0.0.1-SNAPSHOT.jar verification_system.jar
+ENV TESSDATA_PREFIX=/app/tessdata
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "verification_system.jar"]
+ENTRYPOINT ["java", "-jar", "verification_system-0.0.1-SNAPSHOT.jar"]
