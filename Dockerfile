@@ -25,8 +25,11 @@ ENV LC_ALL en_US.UTF-8
 RUN mkdir -p /usr/share/tessdata \
     && wget https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata -P /usr/share/tessdata
 
+# Verify that the file is in the correct location
+RUN ls -la /usr/share/tessdata/
+
 # Set the TESSDATA_PREFIX environment variable
-ENV TESSDATA_PREFIX /usr/share/tessdata/
+ENV TESSDATA_PREFIX=/usr/share/
 
 # Copy the built application
 WORKDIR /app
