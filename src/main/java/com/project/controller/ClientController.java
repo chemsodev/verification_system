@@ -69,8 +69,7 @@ public class ClientController implements ErrorController {
             }
 
             ITesseract tesseract = new Tesseract();
-            File tessdataDir = extractTessdataDirectory();
-            tesseract.setDatapath(tessdataDir.getAbsolutePath());
+            tesseract.setDatapath("/app/tessdata");
             tesseract.setLanguage("eng");
 
             BufferedImage rotatedImage;
@@ -108,6 +107,7 @@ public class ClientController implements ErrorController {
             return new ResponseData("OCR error occurred.", HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
         }
     }
+
 
     private File extractTessdataDirectory() throws IOException {
         Path tempDir = Files.createTempDirectory("tessdata");
