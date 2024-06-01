@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     libtool \
     pkg-config \
     wget \
+    libleptonica-dev \
     && apt-get clean
 
 # Download and build Tesseract 4.0.0
