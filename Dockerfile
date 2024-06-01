@@ -1,7 +1,8 @@
 # Stage 1: Build the application
 FROM maven:3.8.5-openjdk-17 AS build
 WORKDIR /app
-COPY . .
+COPY pom.xml .
+COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Stage 2: Create the final Docker image
@@ -19,10 +20,12 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en  
 ENV LC_ALL en_US.UTF-8  
 
-# Copy Tesseract OCR files from Spring Boot resources
+# Copy the Spring Boot application jar file from the build stage
 WORKDIR /app
-COPY target/verification_system-0.0.1-SNAPSHOT.jar .
-COPY src/main/resources/tessdata /app/tessdata
+COPY --from=build /app/target/verification_system-0.0.1-SNAPSHOT.jar .
+
+# Copy the Tesseract OCR English trained data file
+COPY src/main/resources/tessdata/eng.traineddata /app/tessdata/eng.traineddata
 
 # Set the TESSDATA_PREFIX environment variable
 ENV TESSDATA_PREFIX=/app/tessdata
